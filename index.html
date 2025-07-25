@@ -1,19 +1,61 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Print Manager - Calculadora de Precificação</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49',
+                        },
+                        secondary: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            300: '#c4b5fd',
+                            400: '#a78bfa',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
+                            900: '#4c1d95',
+                            950: '#2e1065',
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .dark {
+            color-scheme: dark;
+        }
         
         body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f0f4f8;
+            transition: background-color 0.3s ease;
         }
         
         .input-group {
@@ -30,26 +72,33 @@
             margin: 0;
         }
         
-        .result-card {
+        .card {
             transition: all 0.3s ease;
+            border: 1px solid transparent;
         }
         
-        .result-card:hover {
-            transform: scale(1.02);
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .dark .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
         }
         
         .tab {
             transition: all 0.3s ease;
+            position: relative;
         }
         
-        .tab.active {
-            border-bottom: 3px solid #4f46e5;
-            color: #4f46e5;
-        }
-        
-        .tab:hover:not(.active) {
-            border-bottom: 3px solid #818cf8;
-            color: #818cf8;
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: currentColor;
         }
         
         .custom-scrollbar::-webkit-scrollbar {
@@ -57,7 +106,7 @@
         }
         
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: transparent;
         }
         
         .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -65,8 +114,16 @@
             border-radius: 3px;
         }
         
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #555;
+        }
+        
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #555;
+        }
+        
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #777;
         }
         
         @keyframes pulse {
@@ -90,8 +147,6 @@
         .tooltip .tooltiptext {
             visibility: hidden;
             width: 200px;
-            background-color: #333;
-            color: #fff;
             text-align: center;
             border-radius: 6px;
             padding: 5px;
@@ -108,23 +163,164 @@
             visibility: visible;
             opacity: 1;
         }
+        
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-content {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            transform: scale(0.95);
+            opacity: 0;
+        }
+        
+        .modal.active .modal-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #0ea5e9;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            line-height: 1;
+        }
+        
+        .badge-blue {
+            background-color: rgba(14, 165, 233, 0.1);
+            color: #0ea5e9;
+        }
+        
+        .badge-purple {
+            background-color: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+        }
+        
+        .badge-green {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+        
+        .badge-red {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+        
+        .badge-yellow {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+        
+        .dark .badge-blue {
+            background-color: rgba(14, 165, 233, 0.2);
+        }
+        
+        .dark .badge-purple {
+            background-color: rgba(139, 92, 246, 0.2);
+        }
+        
+        .dark .badge-green {
+            background-color: rgba(16, 185, 129, 0.2);
+        }
+        
+        .dark .badge-red {
+            background-color: rgba(239, 68, 68, 0.2);
+        }
+        
+        .dark .badge-yellow {
+            background-color: rgba(245, 158, 11, 0.2);
+        }
+        
+        .btn {
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
     <div class="min-h-screen py-4 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto">
             <!-- Header -->
-            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg shadow-lg p-6 mb-6">
+            <div class="bg-gradient-to-r from-primary-600 to-secondary-600 dark:from-primary-800 dark:to-secondary-800 rounded-xl shadow-lg p-6 mb-6">
                 <div class="flex flex-col md:flex-row justify-between items-center">
-                    <div>
-                        <h1 class="text-3xl font-bold text-white">3D Print Manager</h1>
-                        <p class="text-indigo-100 mt-1">Gerenciamento completo para impressão 3D</p>
+                    <div class="flex items-center">
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md mr-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary-600 dark:text-primary-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9.504 1.132a1 1 0 01.992 0l1.75 1a1 1 0 11-.992 1.736L10 3.152l-1.254.716a1 1 0 11-.992-1.736l1.75-1zM5.618 4.504a1 1 0 01-.372 1.364L5.016 6l.23.132a1 1 0 11-.992 1.736L4 7.723V8a1 1 0 01-2 0V6a.996.996 0 01.52-.878l1.734-.99a1 1 0 011.364.372zm8.764 0a1 1 0 011.364-.372l1.733.99A1.002 1.002 0 0118 6v2a1 1 0 11-2 0v-.277l-.254.145a1 1 0 11-.992-1.736l.23-.132-.23-.132a1 1 0 01-.372-1.364zm-7 4a1 1 0 011.364-.372L10 8.848l1.254-.716a1 1 0 11.992 1.736L11 10.58V12a1 1 0 11-2 0v-1.42l-1.246-.712a1 1 0 01-.372-1.364zM3 11a1 1 0 011 1v1.42l1.246.712a1 1 0 11-.992 1.736l-1.75-1A1 1 0 012 14v-2a1 1 0 011-1zm14 0a1 1 0 011 1v2a1 1 0 01-.504.868l-1.75 1a1 1 0 11-.992-1.736L16 13.42V12a1 1 0 011-1zm-9.618 5.504a1 1 0 011.364-.372l.254.145V16a1 1 0 112 0v.277l.254-.145a1 1 0 11.992 1.736l-1.735.992a.995.995 0 01-1.022 0l-1.735-.992a1 1 0 01-.372-1.364z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl font-bold text-white">3D Print Manager</h1>
+                            <p class="text-primary-100 dark:text-primary-200 mt-1">Gerenciamento completo para impressão 3D</p>
+                        </div>
                     </div>
-                    <div class="mt-4 md:mt-0">
-                        <button id="salvarProjetoBtn" class="bg-white text-indigo-600 hover:bg-indigo-50 font-medium py-2 px-4 rounded-md mr-2 transition duration-300 ease-in-out">
+                    <div class="mt-4 md:mt-0 flex items-center">
+                        <div class="flex items-center mr-4">
+                            <span class="mr-2 text-white text-sm">Tema</span>
+                            <label class="switch">
+                                <input type="checkbox" id="themeToggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <button id="salvarProjetoBtn" class="btn bg-white text-primary-600 hover:bg-primary-50 dark:bg-gray-800 dark:text-primary-400 dark:hover:bg-gray-700 font-medium py-2 px-4 rounded-lg mr-2 shadow-md">
                             <i class="fas fa-save mr-1"></i> Salvar Projeto
                         </button>
-                        <button id="exportarPDFBtn" class="bg-indigo-800 hover:bg-indigo-900 text-white font-medium py-2 px-4 rounded-md transition duration-300 ease-in-out">
+                        <button id="exportarPDFBtn" class="btn bg-primary-800 hover:bg-primary-900 dark:bg-primary-700 dark:hover:bg-primary-800 text-white font-medium py-2 px-4 rounded-lg shadow-md">
                             <i class="fas fa-file-pdf mr-1"></i> Exportar PDF
                         </button>
                     </div>
@@ -132,18 +328,24 @@
             </div>
             
             <!-- Tabs -->
-            <div class="bg-white rounded-lg shadow-md mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md mb-6 overflow-hidden">
                 <div class="flex overflow-x-auto">
-                    <button class="tab active flex-1 py-4 px-6 text-center font-medium" data-tab="calculadora">
+                    <button class="tab active flex-1 py-4 px-6 text-center font-medium text-primary-600 dark:text-primary-400" data-tab="calculadora">
                         <i class="fas fa-calculator mr-2"></i> Calculadora
                     </button>
-                    <button class="tab flex-1 py-4 px-6 text-center font-medium" data-tab="impressoras">
+                    <button class="tab flex-1 py-4 px-6 text-center font-medium text-gray-600 dark:text-gray-400" data-tab="impressoras">
                         <i class="fas fa-print mr-2"></i> Impressoras
                     </button>
-                    <button class="tab flex-1 py-4 px-6 text-center font-medium" data-tab="projetos">
+                    <button class="tab flex-1 py-4 px-6 text-center font-medium text-gray-600 dark:text-gray-400" data-tab="filamentos">
+                        <i class="fas fa-scroll mr-2"></i> Filamentos
+                    </button>
+                    <button class="tab flex-1 py-4 px-6 text-center font-medium text-gray-600 dark:text-gray-400" data-tab="clientes">
+                        <i class="fas fa-users mr-2"></i> Clientes
+                    </button>
+                    <button class="tab flex-1 py-4 px-6 text-center font-medium text-gray-600 dark:text-gray-400" data-tab="projetos">
                         <i class="fas fa-folder-open mr-2"></i> Projetos
                     </button>
-                    <button class="tab flex-1 py-4 px-6 text-center font-medium" data-tab="dashboard">
+                    <button class="tab flex-1 py-4 px-6 text-center font-medium text-gray-600 dark:text-gray-400" data-tab="dashboard">
                         <i class="fas fa-chart-pie mr-2"></i> Dashboard
                     </button>
                 </div>
@@ -156,120 +358,127 @@
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <!-- Formulário de Entrada -->
                         <div class="lg:col-span-2">
-                            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-                                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Informações da Peça</h2>
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 card">
+                                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b dark:border-gray-700 pb-2">Informações da Peça</h2>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="input-group">
-                                        <label for="nomePeca" class="block text-sm font-medium text-gray-700 mb-1">Nome da Peça</label>
-                                        <input type="text" id="nomePeca" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="nomePeca" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome da Peça</label>
+                                        <input type="text" id="nomePeca" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="clientePeca" class="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-                                        <input type="text" id="clientePeca" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="clientePeca" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente</label>
+                                        <select id="clientePeca" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                            <option value="">Selecione um cliente</option>
+                                            <option value="1">Cliente Exemplo</option>
+                                        </select>
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="tempoProd" class="block text-sm font-medium text-gray-700 mb-1">Tempo de Produção (horas)</label>
-                                        <input type="number" id="tempoProd" min="0" step="0.1" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="tempoProd" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tempo de Produção (horas)</label>
+                                        <input type="number" id="tempoProd" min="0" step="0.1" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="pesoPeca" class="block text-sm font-medium text-gray-700 mb-1">Peso da Peça (gramas)</label>
-                                        <input type="number" id="pesoPeca" min="0" step="0.1" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="pesoPeca" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Peso da Peça (gramas)</label>
+                                        <input type="number" id="pesoPeca" min="0" step="0.1" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="custoFilamento" class="block text-sm font-medium text-gray-700 mb-1">Custo do Filamento (R$/kg)</label>
-                                        <input type="number" id="custoFilamento" min="0" step="0.01" value="120" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="filamentoSelecionado" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filamento</label>
+                                        <select id="filamentoSelecionado" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                            <option value="">Selecione um filamento</option>
+                                            <option value="1">PLA Preto - R$120/kg</option>
+                                        </select>
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="impressoraSelecionada" class="block text-sm font-medium text-gray-700 mb-1">Impressora</label>
-                                        <select id="impressoraSelecionada" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="impressoraSelecionada" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Impressora</label>
+                                        <select id="impressoraSelecionada" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                             <option value="">Selecione uma impressora</option>
+                                            <option value="1">Ender 3 V2</option>
                                         </select>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-                                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Custos Operacionais</h2>
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 card">
+                                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b dark:border-gray-700 pb-2">Custos Operacionais</h2>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="input-group">
-                                        <label for="precoKwh" class="block text-sm font-medium text-gray-700 mb-1">
+                                        <label for="precoKwh" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                             <span>Preço do KWh (R$)</span>
-                                            <span class="tooltip ml-1 text-gray-500">
+                                            <span class="tooltip ml-1 text-gray-500 dark:text-gray-400">
                                                 <i class="fas fa-info-circle"></i>
-                                                <span class="tooltiptext">Valor do kilowatt-hora na sua região</span>
+                                                <span class="tooltiptext bg-gray-800 dark:bg-gray-700 text-white">Valor do kilowatt-hora na sua região</span>
                                             </span>
                                         </label>
-                                        <input type="number" id="precoKwh" min="0" step="0.01" value="0.80" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <input type="number" id="precoKwh" min="0" step="0.01" value="0.80" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="potenciaImpressora" class="block text-sm font-medium text-gray-700 mb-1">Potência da Impressora (Watts)</label>
-                                        <input type="number" id="potenciaImpressora" min="0" step="1" value="150" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="potenciaImpressora" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Potência da Impressora (Watts)</label>
+                                        <input type="number" id="potenciaImpressora" min="0" step="1" value="150" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="custoEmbalagem" class="block text-sm font-medium text-gray-700 mb-1">Custo com Embalagem (R$)</label>
-                                        <input type="number" id="custoEmbalagem" min="0" step="0.01" value="2.50" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="custoEmbalagem" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Custo com Embalagem (R$)</label>
+                                        <input type="number" id="custoEmbalagem" min="0" step="0.01" value="2.50" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="custoAmortizacao" class="block text-sm font-medium text-gray-700 mb-1">
+                                        <label for="custoAmortizacao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                             <span>Amortização da Impressora (R$/hora)</span>
-                                            <span class="tooltip ml-1 text-gray-500">
+                                            <span class="tooltip ml-1 text-gray-500 dark:text-gray-400">
                                                 <i class="fas fa-info-circle"></i>
-                                                <span class="tooltiptext">Calculado automaticamente com base na impressora selecionada</span>
+                                                <span class="tooltiptext bg-gray-800 dark:bg-gray-700 text-white">Calculado automaticamente com base na impressora selecionada</span>
                                             </span>
                                         </label>
-                                        <input type="number" id="custoAmortizacao" min="0" step="0.01" value="1.50" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <input type="number" id="custoAmortizacao" min="0" step="0.01" value="1.50" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-                                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Taxas e Markup</h2>
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 card">
+                                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b dark:border-gray-700 pb-2">Taxas e Markup</h2>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="input-group">
-                                        <label for="taxaFalhas" class="block text-sm font-medium text-gray-700 mb-1">Taxa de Falhas (%)</label>
-                                        <input type="number" id="taxaFalhas" min="0" max="100" step="0.1" value="5" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="taxaFalhas" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Taxa de Falhas (%)</label>
+                                        <input type="number" id="taxaFalhas" min="0" max="100" step="0.1" value="5" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="taxaImposto" class="block text-sm font-medium text-gray-700 mb-1">Imposto (%)</label>
-                                        <input type="number" id="taxaImposto" min="0" max="100" step="0.1" value="15" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="taxaImposto" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Imposto (%)</label>
+                                        <input type="number" id="taxaImposto" min="0" max="100" step="0.1" value="15" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="taxaCartao" class="block text-sm font-medium text-gray-700 mb-1">Taxa de Cartão (%)</label>
-                                        <input type="number" id="taxaCartao" min="0" max="100" step="0.1" value="3.5" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="taxaCartao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Taxa de Cartão (%)</label>
+                                        <input type="number" id="taxaCartao" min="0" max="100" step="0.1" value="3.5" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="custoAnuncios" class="block text-sm font-medium text-gray-700 mb-1">Custo com Anúncios (%)</label>
-                                        <input type="number" id="custoAnuncios" min="0" max="100" step="0.1" value="10" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="custoAnuncios" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Custo com Anúncios (%)</label>
+                                        <input type="number" id="custoAnuncios" min="0" max="100" step="0.1" value="10" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group md:col-span-2">
-                                        <label for="markup" class="block text-sm font-medium text-gray-700 mb-1">
+                                        <label for="markup" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                             <span>Markup (multiplicador de lucro)</span>
-                                            <span class="tooltip ml-1 text-gray-500">
+                                            <span class="tooltip ml-1 text-gray-500 dark:text-gray-400">
                                                 <i class="fas fa-info-circle"></i>
-                                                <span class="tooltiptext">Valor pelo qual o custo total será multiplicado para obter o preço de venda</span>
+                                                <span class="tooltiptext bg-gray-800 dark:bg-gray-700 text-white">Valor pelo qual o custo total será multiplicado para obter o preço de venda</span>
                                             </span>
                                         </label>
-                                        <input type="number" id="markup" min="1" step="0.1" value="2" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <input type="number" id="markup" min="1" step="0.1" value="2" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                 </div>
                                 
                                 <div class="mt-6">
-                                    <button id="calcularBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
+                                    <button id="calcularBtn" class="btn w-full bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 text-white font-medium py-3 px-4 rounded-lg transition duration-300 ease-in-out shadow-md">
                                         <i class="fas fa-calculator mr-2"></i> Calcular Preço
                                     </button>
                                 </div>
@@ -278,11 +487,11 @@
                         
                         <!-- Resumo e Resultados -->
                         <div class="lg:col-span-1">
-                            <div id="resultadoContainer" class="bg-white rounded-lg shadow-lg p-6 mb-6 sticky top-4">
-                                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Resumo da Precificação</h2>
+                            <div id="resultadoContainer" class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 sticky top-4 card">
+                                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b dark:border-gray-700 pb-2">Resumo da Precificação</h2>
                                 
-                                <div id="resultadoPlaceholder" class="text-center py-10 text-gray-500">
-                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div id="resultadoPlaceholder" class="text-center py-10 text-gray-500 dark:text-gray-400">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                     </svg>
                                     <p class="mt-2">Preencha os dados e clique em "Calcular Preço" para ver o resumo</p>
@@ -290,16 +499,17 @@
                                 
                                 <div id="resultadoContent" class="hidden">
                                     <div class="mb-4">
-                                        <h3 class="font-medium text-gray-700">Informações Básicas</h3>
-                                        <div class="mt-2 bg-gray-50 p-3 rounded-md">
+                                        <h3 class="font-medium text-gray-700 dark:text-gray-300">Informações Básicas</h3>
+                                        <div class="mt-2 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                                             <p><span class="font-medium">Peça:</span> <span id="resumoNomePeca">-</span></p>
                                             <p><span class="font-medium">Cliente:</span> <span id="resumoCliente">-</span></p>
                                             <p><span class="font-medium">Impressora:</span> <span id="resumoImpressora">-</span></p>
+                                            <p><span class="font-medium">Filamento:</span> <span id="resumoFilamento">-</span></p>
                                         </div>
                                     </div>
                                     
                                     <div class="mb-4">
-                                        <h3 class="font-medium text-gray-700">Custos Diretos</h3>
+                                        <h3 class="font-medium text-gray-700 dark:text-gray-300">Custos Diretos</h3>
                                         <div class="mt-2 space-y-1">
                                             <div class="flex justify-between text-sm">
                                                 <span>Filamento:</span>
@@ -317,7 +527,7 @@
                                                 <span>Amortização:</span>
                                                 <span id="custoAmortizacaoResult">R$ 0,00</span>
                                             </div>
-                                            <div class="flex justify-between font-medium border-t border-gray-200 mt-2 pt-2">
+                                            <div class="flex justify-between font-medium border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
                                                 <span>Total Custos Diretos:</span>
                                                 <span id="custoDiretoTotal">R$ 0,00</span>
                                             </div>
@@ -325,7 +535,7 @@
                                     </div>
                                     
                                     <div class="mb-4">
-                                        <h3 class="font-medium text-gray-700">Taxas e Adicionais</h3>
+                                        <h3 class="font-medium text-gray-700 dark:text-gray-300">Taxas e Adicionais</h3>
                                         <div class="mt-2 space-y-1">
                                             <div class="flex justify-between text-sm">
                                                 <span>Falhas:</span>
@@ -343,7 +553,7 @@
                                                 <span>Anúncios:</span>
                                                 <span id="custoAnunciosResult">R$ 0,00</span>
                                             </div>
-                                            <div class="flex justify-between font-medium border-t border-gray-200 mt-2 pt-2">
+                                            <div class="flex justify-between font-medium border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
                                                 <span>Total Taxas:</span>
                                                 <span id="custoTaxasTotal">R$ 0,00</span>
                                             </div>
@@ -351,21 +561,23 @@
                                     </div>
                                     
                                     <div class="mt-6">
-                                        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4">
+                                        <div class="bg-gradient-to-r from-primary-50 to-secondary-50 dark:from-primary-900/30 dark:to-secondary-900/30 rounded-lg p-4">
                                             <div class="mb-3">
-                                                <h3 class="text-sm font-medium text-gray-700">Custo Total</h3>
-                                                <p class="text-xl font-bold text-indigo-700" id="custoTotalResult">R$ 0,00</p>
+                                                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Custo Total</h3>
+                                                <p class="text-xl font-bold text-primary-700 dark:text-primary-400" id="custoTotalResult">R$ 0,00</p>
                                             </div>
                                             
                                             <div>
-                                                <h3 class="text-sm font-medium text-gray-700">Preço de Venda Sugerido</h3>
-                                                <p class="text-2xl font-bold text-purple-700" id="precoVendaResult">R$ 0,00</p>
+                                                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Preço de Venda Sugerido</h3>
+                                                <p class="text-2xl font-bold text-secondary-700 dark:text-secondary-400" id="precoVendaResult">R$ 0,00</p>
                                             </div>
                                         </div>
                                     </div>
                                     
                                     <div class="mt-6">
-                                        <canvas id="custosPieChart" width="400" height="300"></canvas>
+                                        <div id="custosPieChart" class="w-full h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                            <p class="text-gray-500 dark:text-gray-400">Gráfico de distribuição de custos</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -378,48 +590,53 @@
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <!-- Formulário de Cadastro -->
                         <div class="lg:col-span-1">
-                            <div class="bg-white rounded-lg shadow-lg p-6 mb-6 sticky top-4">
-                                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Cadastrar Impressora</h2>
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 sticky top-4 card">
+                                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b dark:border-gray-700 pb-2">Cadastrar Impressora</h2>
                                 
                                 <div class="space-y-4">
                                     <div class="input-group">
-                                        <label for="nomeImpressora" class="block text-sm font-medium text-gray-700 mb-1">Nome da Impressora</label>
-                                        <input type="text" id="nomeImpressora" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="nomeImpressora" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome da Impressora</label>
+                                        <input type="text" id="nomeImpressora" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="modeloImpressora" class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
-                                        <input type="text" id="modeloImpressora" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="modeloImpressora" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Modelo</label>
+                                        <input type="text" id="modeloImpressora" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="custoImpressora" class="block text-sm font-medium text-gray-700 mb-1">Custo de Aquisição (R$)</label>
-                                        <input type="number" id="custoImpressora" min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="custoImpressora" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Custo de Aquisição (R$)</label>
+                                        <input type="number" id="custoImpressora" min="0" step="0.01" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="potenciaWatts" class="block text-sm font-medium text-gray-700 mb-1">Potência (Watts)</label>
-                                        <input type="number" id="potenciaWatts" min="0" step="1" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="potenciaWatts" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Potência (Watts)</label>
+                                        <input type="number" id="potenciaWatts" min="0" step="1" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="vidaUtilHoras" class="block text-sm font-medium text-gray-700 mb-1">
+                                        <label for="vidaUtilHoras" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                             <span>Vida Útil Estimada (horas)</span>
-                                            <span class="tooltip ml-1 text-gray-500">
+                                            <span class="tooltip ml-1 text-gray-500 dark:text-gray-400">
                                                 <i class="fas fa-info-circle"></i>
-                                                <span class="tooltiptext">Tempo total estimado de funcionamento da impressora</span>
+                                                <span class="tooltiptext bg-gray-800 dark:bg-gray-700 text-white">Tempo total estimado de funcionamento da impressora</span>
                                             </span>
                                         </label>
-                                        <input type="number" id="vidaUtilHoras" min="0" step="1" value="5000" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <input type="number" id="vidaUtilHoras" min="0" step="1" value="5000" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
                                     </div>
                                     
                                     <div class="input-group">
-                                        <label for="horasUtilizadas" class="block text-sm font-medium text-gray-700 mb-1">Horas já Utilizadas</label>
-                                        <input type="number" id="horasUtilizadas" min="0" step="1" value="0" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <label for="horasUtilizadas" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Horas já Utilizadas</label>
+                                        <input type="number" id="horasUtilizadas" min="0" step="1" value="0" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <label for="observacoesImpressora" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observações</label>
+                                        <textarea id="observacoesImpressora" rows="3" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white"></textarea>
                                     </div>
                                     
                                     <div class="mt-6">
-                                        <button id="salvarImpressoraBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
+                                        <button id="salvarImpressoraBtn" class="btn w-full bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 text-white font-medium py-3 px-4 rounded-lg transition duration-300 ease-in-out shadow-md">
                                             <i class="fas fa-save mr-2"></i> Salvar Impressora
                                         </button>
                                     </div>
@@ -429,16 +646,257 @@
                         
                         <!-- Lista de Impressoras -->
                         <div class="lg:col-span-2">
-                            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-                                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Impressoras Cadastradas</h2>
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 card">
+                                <div class="flex justify-between items-center mb-4 border-b dark:border-gray-700 pb-2">
+                                    <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Impressoras Cadastradas</h2>
+                                    <div class="flex items-center">
+                                        <div class="relative">
+                                            <input type="text" id="pesquisaImpressora" placeholder="Pesquisar..." class="pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                            <div class="absolute left-3 top-2.5 text-gray-400">
+                                                <i class="fas fa-search"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 
                                 <div id="listaImpressoras" class="space-y-4">
-                                    <div class="text-center py-10 text-gray-500" id="semImpressoras">
-                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                        </svg>
-                                        <p class="mt-2">Nenhuma impressora cadastrada</p>
-                                        <p class="text-sm">Cadastre sua primeira impressora no formulário ao lado</p>
+                                    <!-- Exemplo de impressora cadastrada -->
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                                        <div class="flex justify-between">
+                                            <div>
+                                                <h3 class="font-medium text-gray-800 dark:text-gray-200">Ender 3 V2</h3>
+                                                <p class="text-sm text-gray-600 dark:text-gray-400">Modelo: Creality Ender 3 V2</p>
+                                                <div class="mt-2 flex flex-wrap gap-2">
+                                                    <span class="badge badge-blue">150W</span>
+                                                    <span class="badge badge-green">R$ 2.500,00</span>
+                                                    <span class="badge badge-purple">5000h vida útil</span>
+                                                </div>
+                                            </div>
+                                            <div class="flex space-x-2">
+                                                <button class="btn p-2 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/30">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn p-2 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-800/30">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                            <p>Observações: Impressora em bom estado, com mesa aquecida e extrusora de metal.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filamentos Tab -->
+                <div id="filamentosTab" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Formulário de Cadastro -->
+                        <div class="lg:col-span-1">
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 sticky top-4 card">
+                                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b dark:border-gray-700 pb-2">Cadastrar Filamento</h2>
+                                
+                                <div class="space-y-4">
+                                    <div class="input-group">
+                                        <label for="nomeFilamento" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome do Filamento</label>
+                                        <input type="text" id="nomeFilamento" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <label for="materialFilamento" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Material</label>
+                                        <select id="materialFilamento" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                            <option value="PLA">PLA</option>
+                                            <option value="ABS">ABS</option>
+                                            <option value="PETG">PETG</option>
+                                            <option value="TPU">TPU</option>
+                                            <option value="Nylon">Nylon</option>
+                                            <option value="ASA">ASA</option>
+                                            <option value="PC">PC</option>
+                                            <option value="Outro">Outro</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <label for="corFilamento" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cor</label>
+                                        <div class="flex space-x-2">
+                                            <input type="text" id="corFilamento" class="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                            <input type="color" id="corFilamentoPicker" class="h-10 w-10 rounded border border-gray-300 dark:border-gray-600 cursor-pointer">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <label for="fabricanteFilamento" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fabricante</label>
+                                        <input type="text" id="fabricanteFilamento" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <label for="precoFilamento" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preço (R$/kg)</label>
+                                        <input type="number" id="precoFilamento" min="0" step="0.01" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <label for="diametroFilamento" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Diâmetro (mm)</label>
+                                        <select id="diametroFilamento" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                            <option value="1.75">1.75mm</option>
+                                            <option value="2.85">2.85mm</option>
+                                            <option value="3.00">3.00mm</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <label for="observacoesFilamento" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observações</label>
+                                        <textarea id="observacoesFilamento" rows="3" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white"></textarea>
+                                    </div>
+                                    
+                                    <div class="mt-6">
+                                        <button id="salvarFilamentoBtn" class="btn w-full bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 text-white font-medium py-3 px-4 rounded-lg transition duration-300 ease-in-out shadow-md">
+                                            <i class="fas fa-save mr-2"></i> Salvar Filamento
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Lista de Filamentos -->
+                        <div class="lg:col-span-2">
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 card">
+                                <div class="flex justify-between items-center mb-4 border-b dark:border-gray-700 pb-2">
+                                    <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Filamentos Cadastrados</h2>
+                                    <div class="flex items-center">
+                                        <div class="relative">
+                                            <input type="text" id="pesquisaFilamento" placeholder="Pesquisar..." class="pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                            <div class="absolute left-3 top-2.5 text-gray-400">
+                                                <i class="fas fa-search"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="listaFilamentos" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <!-- Exemplo de filamento cadastrado -->
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                                        <div class="flex justify-between">
+                                            <div class="flex items-start">
+                                                <div class="w-8 h-8 rounded-full mr-3" style="background-color: #000000;"></div>
+                                                <div>
+                                                    <h3 class="font-medium text-gray-800 dark:text-gray-200">PLA Preto</h3>
+                                                    <p class="text-sm text-gray-600 dark:text-gray-400">Fabricante: 3D Fila</p>
+                                                    <div class="mt-2 flex flex-wrap gap-2">
+                                                        <span class="badge badge-blue">PLA</span>
+                                                        <span class="badge badge-green">R$ 120,00/kg</span>
+                                                        <span class="badge badge-purple">1.75mm</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="flex space-x-2">
+                                                <button class="btn p-2 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/30">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn p-2 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-800/30">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Clientes Tab -->
+                <div id="clientesTab" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Formulário de Cadastro -->
+                        <div class="lg:col-span-1">
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 sticky top-4 card">
+                                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b dark:border-gray-700 pb-2">Cadastrar Cliente</h2>
+                                
+                                <div class="space-y-4">
+                                    <div class="input-group">
+                                        <label for="nomeCliente" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome do Cliente</label>
+                                        <input type="text" id="nomeCliente" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <label for="emailCliente" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                                        <input type="email" id="emailCliente" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <label for="telefoneCliente" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefone</label>
+                                        <input type="tel" id="telefoneCliente" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <label for="enderecoCliente" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Endereço</label>
+                                        <input type="text" id="enderecoCliente" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <label for="tipoCliente" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Cliente</label>
+                                        <select id="tipoCliente" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                            <option value="Pessoa Física">Pessoa Física</option>
+                                            <option value="Empresa">Empresa</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <label for="observacoesCliente" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observações</label>
+                                        <textarea id="observacoesCliente" rows="3" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white"></textarea>
+                                    </div>
+                                    
+                                    <div class="mt-6">
+                                        <button id="salvarClienteBtn" class="btn w-full bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 text-white font-medium py-3 px-4 rounded-lg transition duration-300 ease-in-out shadow-md">
+                                            <i class="fas fa-save mr-2"></i> Salvar Cliente
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Lista de Clientes -->
+                        <div class="lg:col-span-2">
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 card">
+                                <div class="flex justify-between items-center mb-4 border-b dark:border-gray-700 pb-2">
+                                    <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Clientes Cadastrados</h2>
+                                    <div class="flex items-center">
+                                        <div class="relative">
+                                            <input type="text" id="pesquisaCliente" placeholder="Pesquisar..." class="pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                            <div class="absolute left-3 top-2.5 text-gray-400">
+                                                <i class="fas fa-search"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="listaClientes" class="space-y-4">
+                                    <!-- Exemplo de cliente cadastrado -->
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                                        <div class="flex justify-between">
+                                            <div>
+                                                <h3 class="font-medium text-gray-800 dark:text-gray-200">Cliente Exemplo</h3>
+                                                <p class="text-sm text-gray-600 dark:text-gray-400">Email: cliente@exemplo.com</p>
+                                                <p class="text-sm text-gray-600 dark:text-gray-400">Telefone: (11) 98765-4321</p>
+                                                <div class="mt-2">
+                                                    <span class="badge badge-blue">Pessoa Física</span>
+                                                </div>
+                                            </div>
+                                            <div class="flex space-x-2">
+                                                <button class="btn p-2 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/30">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn p-2 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-800/30">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                            <p>Endereço: Rua Exemplo, 123 - São Paulo/SP</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -448,30 +906,56 @@
                 
                 <!-- Projetos Tab -->
                 <div id="projetosTab" class="tab-content hidden">
-                    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-                        <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Projetos Salvos</h2>
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 card">
+                        <div class="flex justify-between items-center mb-4 border-b dark:border-gray-700 pb-2">
+                            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Projetos Salvos</h2>
+                            <div class="flex items-center">
+                                <div class="relative mr-2">
+                                    <input type="text" id="pesquisaProjeto" placeholder="Pesquisar..." class="pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                    <div class="absolute left-3 top-2.5 text-gray-400">
+                                        <i class="fas fa-search"></i>
+                                    </div>
+                                </div>
+                                <select id="filtroCliente" class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-600 dark:text-white">
+                                    <option value="">Todos os clientes</option>
+                                    <option value="1">Cliente Exemplo</option>
+                                </select>
+                            </div>
+                        </div>
                         
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead>
                                     <tr>
-                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome da Peça</th>
-                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Impressora</th>
-                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Total</th>
-                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço de Venda</th>
-                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                        <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nome da Peça</th>
+                                        <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Cliente</th>
+                                        <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Impressora</th>
+                                        <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Filamento</th>
+                                        <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Custo Total</th>
+                                        <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Preço de Venda</th>
+                                        <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Data</th>
+                                        <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ações</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tabelaProjetos" class="bg-white divide-y divide-gray-200">
-                                    <tr id="semProjetos">
-                                        <td colspan="7" class="px-6 py-10 text-center text-gray-500">
-                                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                            <p class="mt-2">Nenhum projeto salvo</p>
-                                            <p class="text-sm">Seus projetos salvos aparecerão aqui</p>
+                                <tbody id="tabelaProjetos" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    <!-- Exemplo de projeto salvo -->
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td class="px-6 py-4 whitespace-nowrap">Suporte para Celular</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">Cliente Exemplo</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">Ender 3 V2</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">PLA Preto</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">R$ 25,80</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">R$ 51,60</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">15/05/2023</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex space-x-2">
+                                                <button class="btn p-1 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/30">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn p-1 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-800/30">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -483,60 +967,104 @@
                 <!-- Dashboard Tab -->
                 <div id="dashboardTab" class="tab-content hidden">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                        <div class="bg-white rounded-lg shadow-lg p-6">
-                            <h3 class="text-sm font-medium text-gray-500">Total de Projetos</h3>
-                            <p class="text-3xl font-bold text-indigo-600 mt-2" id="totalProjetos">0</p>
-                            <div class="mt-2 text-sm text-gray-600">
-                                <span class="text-green-500"><i class="fas fa-arrow-up"></i> 12%</span> desde o mês passado
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 card">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total de Projetos</h3>
+                                    <p class="text-3xl font-bold text-primary-600 dark:text-primary-400 mt-1" id="totalProjetos">1</p>
+                                    <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                        <span class="text-green-500"><i class="fas fa-arrow-up"></i> 12%</span> desde o mês passado
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="bg-white rounded-lg shadow-lg p-6">
-                            <h3 class="text-sm font-medium text-gray-500">Faturamento Total</h3>
-                            <p class="text-3xl font-bold text-purple-600 mt-2" id="faturamentoTotal">R$ 0,00</p>
-                            <div class="mt-2 text-sm text-gray-600">
-                                <span class="text-green-500"><i class="fas fa-arrow-up"></i> 8%</span> desde o mês passado
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 card">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-secondary-100 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400 mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Faturamento Total</h3>
+                                    <p class="text-3xl font-bold text-secondary-600 dark:text-secondary-400 mt-1" id="faturamentoTotal">R$ 51,60</p>
+                                    <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                        <span class="text-green-500"><i class="fas fa-arrow-up"></i> 8%</span> desde o mês passado
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="bg-white rounded-lg shadow-lg p-6">
-                            <h3 class="text-sm font-medium text-gray-500">Horas de Impressão</h3>
-                            <p class="text-3xl font-bold text-blue-600 mt-2" id="horasImpressao">0h</p>
-                            <div class="mt-2 text-sm text-gray-600">
-                                <span class="text-green-500"><i class="fas fa-arrow-up"></i> 15%</span> desde o mês passado
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 card">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Horas de Impressão</h3>
+                                    <p class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="horasImpressao">3h</p>
+                                    <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                        <span class="text-green-500"><i class="fas fa-arrow-up"></i> 15%</span> desde o mês passado
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="bg-white rounded-lg shadow-lg p-6">
-                            <h3 class="text-sm font-medium text-gray-500">Filamento Utilizado</h3>
-                            <p class="text-3xl font-bold text-emerald-600 mt-2" id="filamentoUtilizado">0kg</p>
-                            <div class="mt-2 text-sm text-gray-600">
-                                <span class="text-green-500"><i class="fas fa-arrow-up"></i> 10%</span> desde o mês passado
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 card">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Filamento Utilizado</h3>
+                                    <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1" id="filamentoUtilizado">0.2kg</p>
+                                    <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                        <span class="text-green-500"><i class="fas fa-arrow-up"></i> 10%</span> desde o mês passado
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        <div class="bg-white rounded-lg shadow-lg p-6">
-                            <h3 class="text-lg font-medium text-gray-800 mb-4">Projetos por Mês</h3>
-                            <canvas id="projetosPorMesChart" height="300"></canvas>
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 card">
+                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">Projetos por Mês</h3>
+                            <div class="w-full h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                <p class="text-gray-500 dark:text-gray-400">Gráfico de projetos por mês</p>
+                            </div>
                         </div>
                         
-                        <div class="bg-white rounded-lg shadow-lg p-6">
-                            <h3 class="text-lg font-medium text-gray-800 mb-4">Faturamento por Mês</h3>
-                            <canvas id="faturamentoPorMesChart" height="300"></canvas>
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 card">
+                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">Faturamento por Mês</h3>
+                            <div class="w-full h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                <p class="text-gray-500 dark:text-gray-400">Gráfico de faturamento por mês</p>
+                            </div>
                         </div>
                     </div>
                     
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white rounded-lg shadow-lg p-6">
-                            <h3 class="text-lg font-medium text-gray-800 mb-4">Uso das Impressoras</h3>
-                            <canvas id="usoImpressorasChart" height="300"></canvas>
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 card">
+                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">Uso das Impressoras</h3>
+                            <div class="w-full h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                <p class="text-gray-500 dark:text-gray-400">Gráfico de uso das impressoras</p>
+                            </div>
                         </div>
                         
-                        <div class="bg-white rounded-lg shadow-lg p-6">
-                            <h3 class="text-lg font-medium text-gray-800 mb-4">Distribuição de Custos</h3>
-                            <canvas id="distribuicaoCustosChart" height="300"></canvas>
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 card">
+                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">Distribuição de Custos</h3>
+                            <div class="w-full h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                <p class="text-gray-500 dark:text-gray-400">Gráfico de distribuição de custos</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -545,36 +1073,37 @@
     </div>
     
     <!-- PDF Preview Modal -->
-    <div id="pdfModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
-            <div class="p-4 border-b flex justify-between items-center">
-                <h3 class="text-lg font-medium text-gray-900">Prévia do PDF</h3>
-                <button id="fecharPdfModal" class="text-gray-500 hover:text-gray-700">
+    <div id="pdfModal" class="modal fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+            <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Prévia do PDF</h3>
+                <button id="fecharPdfModal" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
             <div class="p-6">
-                <div id="pdfPreview" class="border p-6 bg-white">
+                <div id="pdfPreview" class="border dark:border-gray-700 p-6 bg-white">
                     <!-- PDF Content -->
                     <div class="text-center mb-6">
                         <h1 class="text-2xl font-bold text-gray-800">Orçamento de Impressão 3D</h1>
-                        <p class="text-gray-600" id="pdfData"></p>
+                        <p class="text-gray-600" id="pdfData">15/05/2023</p>
                     </div>
                     
                     <div class="mb-6">
                         <h2 class="text-xl font-semibold text-gray-800 mb-2">Informações do Projeto</h2>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <p><span class="font-medium">Nome da Peça:</span> <span id="pdfNomePeca">-</span></p>
-                                <p><span class="font-medium">Cliente:</span> <span id="pdfCliente">-</span></p>
-                                <p><span class="font-medium">Impressora:</span> <span id="pdfImpressora">-</span></p>
+                                <p><span class="font-medium">Nome da Peça:</span> <span id="pdfNomePeca">Suporte para Celular</span></p>
+                                <p><span class="font-medium">Cliente:</span> <span id="pdfCliente">Cliente Exemplo</span></p>
+                                <p><span class="font-medium">Impressora:</span> <span id="pdfImpressora">Ender 3 V2</span></p>
+                                <p><span class="font-medium">Filamento:</span> <span id="pdfFilamento">PLA Preto</span></p>
                             </div>
                             <div>
-                                <p><span class="font-medium">Tempo de Produção:</span> <span id="pdfTempoProd">-</span> horas</p>
-                                <p><span class="font-medium">Peso da Peça:</span> <span id="pdfPesoPeca">-</span> gramas</p>
-                                <p><span class="font-medium">Data do Orçamento:</span> <span id="pdfDataOrcamento">-</span></p>
+                                <p><span class="font-medium">Tempo de Produção:</span> <span id="pdfTempoProd">3</span> horas</p>
+                                <p><span class="font-medium">Peso da Peça:</span> <span id="pdfPesoPeca">150</span> gramas</p>
+                                <p><span class="font-medium">Data do Orçamento:</span> <span id="pdfDataOrcamento">15/05/2023</span></p>
                             </div>
                         </div>
                     </div>
@@ -591,51 +1120,51 @@
                             <tbody>
                                 <tr>
                                     <td class="py-2 px-4 border-b">Filamento</td>
-                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoFilamento">0,00</td>
+                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoFilamento">18,00</td>
                                 </tr>
                                 <tr>
                                     <td class="py-2 px-4 border-b">Energia</td>
-                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoEnergia">0,00</td>
+                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoEnergia">0,36</td>
                                 </tr>
                                 <tr>
                                     <td class="py-2 px-4 border-b">Embalagem</td>
-                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoEmbalagem">0,00</td>
+                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoEmbalagem">2,50</td>
                                 </tr>
                                 <tr>
                                     <td class="py-2 px-4 border-b">Amortização da Impressora</td>
-                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoAmortizacao">0,00</td>
+                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoAmortizacao">4,50</td>
                                 </tr>
                                 <tr class="bg-gray-50">
                                     <td class="py-2 px-4 border-b font-medium">Total Custos Diretos</td>
-                                    <td class="py-2 px-4 border-b text-right font-medium" id="pdfCustoDiretoTotal">0,00</td>
+                                    <td class="py-2 px-4 border-b text-right font-medium" id="pdfCustoDiretoTotal">25,36</td>
                                 </tr>
                                 <tr>
                                     <td class="py-2 px-4 border-b">Taxa de Falhas</td>
-                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoFalhas">0,00</td>
+                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoFalhas">1,27</td>
                                 </tr>
                                 <tr>
                                     <td class="py-2 px-4 border-b">Impostos</td>
-                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoImposto">0,00</td>
+                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoImposto">3,99</td>
                                 </tr>
                                 <tr>
                                     <td class="py-2 px-4 border-b">Taxa de Cartão</td>
-                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoCartao">0,00</td>
+                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoCartao">0,93</td>
                                 </tr>
                                 <tr>
                                     <td class="py-2 px-4 border-b">Anúncios</td>
-                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoAnuncios">0,00</td>
+                                    <td class="py-2 px-4 border-b text-right" id="pdfCustoAnuncios">2,66</td>
                                 </tr>
                                 <tr class="bg-gray-50">
                                     <td class="py-2 px-4 border-b font-medium">Total Taxas</td>
-                                    <td class="py-2 px-4 border-b text-right font-medium" id="pdfCustoTaxasTotal">0,00</td>
+                                    <td class="py-2 px-4 border-b text-right font-medium" id="pdfCustoTaxasTotal">8,85</td>
                                 </tr>
-                                <tr class="bg-indigo-50">
+                                <tr class="bg-primary-50">
                                     <td class="py-2 px-4 border-b font-medium">Custo Total</td>
-                                    <td class="py-2 px-4 border-b text-right font-medium" id="pdfCustoTotal">0,00</td>
+                                    <td class="py-2 px-4 border-b text-right font-medium" id="pdfCustoTotal">34,21</td>
                                 </tr>
-                                <tr class="bg-purple-50">
+                                <tr class="bg-secondary-50">
                                     <td class="py-3 px-4 font-bold">Preço de Venda</td>
-                                    <td class="py-3 px-4 text-right font-bold" id="pdfPrecoVenda">0,00</td>
+                                    <td class="py-3 px-4 text-right font-bold" id="pdfPrecoVenda">68,42</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -654,7 +1183,7 @@
                 </div>
                 
                 <div class="mt-6 flex justify-end">
-                    <button id="downloadPdfBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
+                    <button id="downloadPdfBtn" class="btn bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 text-white font-medium py-2 px-4 rounded-lg transition duration-300 ease-in-out shadow-md">
                         <i class="fas fa-download mr-2"></i> Download PDF
                     </button>
                 </div>
@@ -662,101 +1191,106 @@
         </div>
     </div>
     
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <!-- Confirm Delete Modal -->
+    <div id="confirmDeleteModal" class="modal fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <div class="text-center mb-5">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30">
+                        <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mt-3">Confirmar exclusão</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2" id="confirmDeleteText">Tem certeza que deseja excluir este item?</p>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button id="cancelDeleteBtn" class="btn px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+                        Cancelar
+                    </button>
+                    <button id="confirmDeleteBtn" class="btn px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Inicialização do banco de dados
-            let db = {
-                impressoras: JSON.parse(localStorage.getItem('impressoras')) || [],
-                projetos: JSON.parse(localStorage.getItem('projetos')) || []
-            };
+            // Tema
+            const themeToggle = document.getElementById('themeToggle');
             
-            // Variáveis globais
-            let custosPieChart = null;
-            let projetosPorMesChart = null;
-            let faturamentoPorMesChart = null;
-            let usoImpressorasChart = null;
-            let distribuicaoCustosChart = null;
-            let resultadosCalculados = null;
+            // Verificar preferência de tema
+            const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDarkMode) {
+                document.documentElement.classList.add('dark');
+                themeToggle.checked = true;
+            }
             
-            // Elementos DOM
+            // Alternar tema
+            themeToggle.addEventListener('change', function() {
+                if (this.checked) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            });
+            
+            // Navegação por abas
             const tabs = document.querySelectorAll('.tab');
             const tabContents = document.querySelectorAll('.tab-content');
-            const calcularBtn = document.getElementById('calcularBtn');
-            const salvarProjetoBtn = document.getElementById('salvarProjetoBtn');
-            const exportarPDFBtn = document.getElementById('exportarPDFBtn');
-            const salvarImpressoraBtn = document.getElementById('salvarImpressoraBtn');
-            const fecharPdfModal = document.getElementById('fecharPdfModal');
-            const downloadPdfBtn = document.getElementById('downloadPdfBtn');
-            const pdfModal = document.getElementById('pdfModal');
             
-            // Inicialização
-            atualizarListaImpressoras();
-            atualizarSelectImpressoras();
-            atualizarTabelaProjetos();
-            atualizarDashboard();
-            
-            // Event Listeners
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
                     const tabId = tab.getAttribute('data-tab');
-                    mudarTab(tabId);
+                    
+                    // Atualizar classes das abas
+                    tabs.forEach(t => {
+                        if (t.getAttribute('data-tab') === tabId) {
+                            t.classList.add('active');
+                            t.classList.add('text-primary-600');
+                            t.classList.add('dark:text-primary-400');
+                            t.classList.remove('text-gray-600');
+                            t.classList.remove('dark:text-gray-400');
+                        } else {
+                            t.classList.remove('active');
+                            t.classList.remove('text-primary-600');
+                            t.classList.remove('dark:text-primary-400');
+                            t.classList.add('text-gray-600');
+                            t.classList.add('dark:text-gray-400');
+                        }
+                    });
+                    
+                    // Mostrar conteúdo da aba selecionada
+                    tabContents.forEach(content => {
+                        if (content.id === tabId + 'Tab') {
+                            content.classList.remove('hidden');
+                        } else {
+                            content.classList.add('hidden');
+                        }
+                    });
                 });
             });
             
-            calcularBtn.addEventListener('click', calcularPreco);
-            salvarProjetoBtn.addEventListener('click', salvarProjeto);
-            exportarPDFBtn.addEventListener('click', mostrarPreviewPDF);
-            salvarImpressoraBtn.addEventListener('click', salvarImpressora);
-            fecharPdfModal.addEventListener('click', () => pdfModal.classList.add('hidden'));
-            downloadPdfBtn.addEventListener('click', downloadPDF);
+            // Calculadora
+            const calcularBtn = document.getElementById('calcularBtn');
             
-            document.getElementById('impressoraSelecionada').addEventListener('change', function() {
-                const impressoraId = this.value;
-                if (impressoraId) {
-                    const impressora = db.impressoras.find(imp => imp.id === impressoraId);
-                    if (impressora) {
-                        document.getElementById('potenciaImpressora').value = impressora.potenciaWatts;
-                        calcularAmortizacao(impressora);
-                    }
-                }
-            });
-            
-            // Funções
-            function mudarTab(tabId) {
-                tabs.forEach(tab => {
-                    if (tab.getAttribute('data-tab') === tabId) {
-                        tab.classList.add('active');
-                    } else {
-                        tab.classList.remove('active');
-                    }
-                });
-                
-                tabContents.forEach(content => {
-                    if (content.id === tabId + 'Tab') {
-                        content.classList.remove('hidden');
-                    } else {
-                        content.classList.add('hidden');
-                    }
-                });
-                
-                // Atualizar gráficos se estiver na tab dashboard
-                if (tabId === 'dashboard') {
-                    atualizarDashboard();
-                }
-            }
-            
-            function formatarMoeda(valor) {
-                return 'R$ ' + valor.toFixed(2).replace('.', ',');
-            }
-            
-            function calcularPreco() {
-                // Obter valores dos inputs
+            calcularBtn.addEventListener('click', function() {
                 const nomePeca = document.getElementById('nomePeca').value;
-                const clientePeca = document.getElementById('clientePeca').value;
+                const clientePeca = document.getElementById('clientePeca').options[document.getElementById('clientePeca').selectedIndex].text;
                 const tempoProd = parseFloat(document.getElementById('tempoProd').value) || 0;
                 const pesoPeca = parseFloat(document.getElementById('pesoPeca').value) || 0;
-                const custoFilamento = parseFloat(document.getElementById('custoFilamento').value) || 0;
+                const filamento = document.getElementById('filamentoSelecionado').options[document.getElementById('filamentoSelecionado').selectedIndex].text;
+                const impressora = document.getElementById('impressoraSelecionada').options[document.getElementById('impressoraSelecionada').selectedIndex].text;
+                
+                // Validação básica
+                if (!nomePeca || tempoProd <= 0 || pesoPeca <= 0) {
+                    alert('Por favor, preencha todos os campos obrigatórios.');
+                    return;
+                }
+                
+                // Cálculos
                 const precoKwh = parseFloat(document.getElementById('precoKwh').value) || 0;
                 const potenciaImpressora = parseFloat(document.getElementById('potenciaImpressora').value) || 0;
                 const custoEmbalagem = parseFloat(document.getElementById('custoEmbalagem').value) || 0;
@@ -766,22 +1300,17 @@
                 const taxaCartao = parseFloat(document.getElementById('taxaCartao').value) || 0;
                 const custoAnuncios = parseFloat(document.getElementById('custoAnuncios').value) || 0;
                 const markup = parseFloat(document.getElementById('markup').value) || 1;
-                const impressoraSelecionada = document.getElementById('impressoraSelecionada').value;
                 
-                // Validar inputs
-                if (!nomePeca || tempoProd <= 0 || pesoPeca <= 0) {
-                    alert('Por favor, preencha todos os campos obrigatórios corretamente.');
-                    return;
-                }
+                // Preço do filamento (exemplo: R$120/kg)
+                const precoFilamento = 120; // R$/kg
                 
-                // Calcular custos diretos
-                const custoFilamentoTotal = (pesoPeca / 1000) * custoFilamento;
+                // Cálculos
+                const custoFilamento = (pesoPeca / 1000) * precoFilamento;
                 const custoEnergia = (potenciaImpressora / 1000) * tempoProd * precoKwh;
                 const custoAmortizacaoTotal = custoAmortizacao * tempoProd;
                 
-                const custoDireto = custoFilamentoTotal + custoEnergia + custoEmbalagem + custoAmortizacaoTotal;
+                const custoDireto = custoFilamento + custoEnergia + custoEmbalagem + custoAmortizacaoTotal;
                 
-                // Calcular taxas
                 const custoFalhas = custoDireto * (taxaFalhas / 100);
                 const custoBase = custoDireto + custoFalhas;
                 
@@ -790,41 +1319,16 @@
                 const custoAnunciosTotal = custoBase * (custoAnuncios / 100);
                 
                 const custoTaxasTotal = custoFalhas + custoImposto + custoCartao + custoAnunciosTotal;
-                
-                // Calcular custo total e preço de venda
                 const custoTotal = custoDireto + custoTaxasTotal;
                 const precoVenda = custoTotal * markup;
                 
-                // Salvar resultados para uso posterior
-                resultadosCalculados = {
-                    nomePeca,
-                    clientePeca,
-                    impressoraSelecionada,
-                    tempoProd,
-                    pesoPeca,
-                    custoFilamentoTotal,
-                    custoEnergia,
-                    custoEmbalagem,
-                    custoAmortizacaoTotal,
-                    custoDireto,
-                    custoFalhas,
-                    custoImposto,
-                    custoCartao,
-                    custoAnunciosTotal,
-                    custoTaxasTotal,
-                    custoTotal,
-                    precoVenda,
-                    markup
-                };
-                
-                // Exibir resultados
+                // Atualizar resultados
                 document.getElementById('resumoNomePeca').textContent = nomePeca;
-                document.getElementById('resumoCliente').textContent = clientePeca || '-';
+                document.getElementById('resumoCliente').textContent = clientePeca !== 'Selecione um cliente' ? clientePeca : '-';
+                document.getElementById('resumoImpressora').textContent = impressora !== 'Selecione uma impressora' ? impressora : '-';
+                document.getElementById('resumoFilamento').textContent = filamento !== 'Selecione um filamento' ? filamento : '-';
                 
-                const impressora = db.impressoras.find(imp => imp.id === impressoraSelecionada);
-                document.getElementById('resumoImpressora').textContent = impressora ? impressora.nome : '-';
-                
-                document.getElementById('custoFilamentoResult').textContent = formatarMoeda(custoFilamentoTotal);
+                document.getElementById('custoFilamentoResult').textContent = formatarMoeda(custoFilamento);
                 document.getElementById('custoEnergiaResult').textContent = formatarMoeda(custoEnergia);
                 document.getElementById('custoEmbalagemResult').textContent = formatarMoeda(custoEmbalagem);
                 document.getElementById('custoAmortizacaoResult').textContent = formatarMoeda(custoAmortizacaoTotal);
@@ -842,75 +1346,43 @@
                 // Mostrar resultados
                 document.getElementById('resultadoPlaceholder').classList.add('hidden');
                 document.getElementById('resultadoContent').classList.remove('hidden');
-                
-                // Criar gráfico de pizza
-                criarGraficoCustos(custoFilamentoTotal, custoEnergia, custoEmbalagem, custoAmortizacaoTotal, custoTaxasTotal);
+            });
+            
+            // Funções auxiliares
+            function formatarMoeda(valor) {
+                return 'R$ ' + valor.toFixed(2).replace('.', ',');
             }
             
-            function criarGraficoCustos(filamento, energia, embalagem, amortizacao, taxas) {
-                const ctx = document.getElementById('custosPieChart').getContext('2d');
-                
-                if (custosPieChart) {
-                    custosPieChart.destroy();
-                }
-                
-                custosPieChart = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: ['Filamento', 'Energia', 'Embalagem', 'Amortização', 'Taxas'],
-                        datasets: [{
-                            data: [filamento, energia, embalagem, amortizacao, taxas],
-                            backgroundColor: [
-                                '#4f46e5', // indigo
-                                '#8b5cf6', // violet
-                                '#ec4899', // pink
-                                '#06b6d4', // cyan
-                                '#10b981'  // emerald
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                            },
-                            title: {
-                                display: true,
-                                text: 'Distribuição de Custos'
-                            }
-                        }
-                    }
-                });
-            }
+            // Modais
+            const exportarPDFBtn = document.getElementById('exportarPDFBtn');
+            const pdfModal = document.getElementById('pdfModal');
+            const fecharPdfModal = document.getElementById('fecharPdfModal');
             
-            function salvarImpressora() {
+            exportarPDFBtn.addEventListener('click', function() {
+                pdfModal.classList.remove('hidden');
+                pdfModal.classList.add('active');
+            });
+            
+            fecharPdfModal.addEventListener('click', function() {
+                pdfModal.classList.add('hidden');
+                pdfModal.classList.remove('active');
+            });
+            
+            // Salvar Impressora
+            const salvarImpressoraBtn = document.getElementById('salvarImpressoraBtn');
+            
+            salvarImpressoraBtn.addEventListener('click', function() {
                 const nomeImpressora = document.getElementById('nomeImpressora').value;
                 const modeloImpressora = document.getElementById('modeloImpressora').value;
-                const custoImpressora = parseFloat(document.getElementById('custoImpressora').value) || 0;
-                const potenciaWatts = parseFloat(document.getElementById('potenciaWatts').value) || 0;
-                const vidaUtilHoras = parseFloat(document.getElementById('vidaUtilHoras').value) || 0;
-                const horasUtilizadas = parseFloat(document.getElementById('horasUtilizadas').value) || 0;
+                const custoImpressora = document.getElementById('custoImpressora').value;
+                const potenciaWatts = document.getElementById('potenciaWatts').value;
                 
-                if (!nomeImpressora || !modeloImpressora || custoImpressora <= 0 || vidaUtilHoras <= 0) {
-                    alert('Por favor, preencha todos os campos obrigatórios corretamente.');
+                if (!nomeImpressora || !modeloImpressora || !custoImpressora || !potenciaWatts) {
+                    alert('Por favor, preencha todos os campos obrigatórios.');
                     return;
                 }
                 
-                const novaImpressora = {
-                    id: Date.now().toString(),
-                    nome: nomeImpressora,
-                    modelo: modeloImpressora,
-                    custo: custoImpressora,
-                    potenciaWatts: potenciaWatts,
-                    vidaUtilHoras: vidaUtilHoras,
-                    horasUtilizadas: horasUtilizadas,
-                    dataCadastro: new Date().toISOString()
-                };
-                
-                db.impressoras.push(novaImpressora);
-                localStorage.setItem('impressoras', JSON.stringify(db.impressoras));
+                alert('Impressora salva com sucesso!');
                 
                 // Limpar formulário
                 document.getElementById('nomeImpressora').value = '';
@@ -919,620 +1391,79 @@
                 document.getElementById('potenciaWatts').value = '';
                 document.getElementById('vidaUtilHoras').value = '5000';
                 document.getElementById('horasUtilizadas').value = '0';
-                
-                // Atualizar lista de impressoras
-                atualizarListaImpressoras();
-                atualizarSelectImpressoras();
-                
-                alert('Impressora cadastrada com sucesso!');
-            }
+                document.getElementById('observacoesImpressora').value = '';
+            });
             
-            function atualizarListaImpressoras() {
-                const listaImpressoras = document.getElementById('listaImpressoras');
-                const semImpressoras = document.getElementById('semImpressoras');
+            // Salvar Filamento
+            const salvarFilamentoBtn = document.getElementById('salvarFilamentoBtn');
+            
+            salvarFilamentoBtn.addEventListener('click', function() {
+                const nomeFilamento = document.getElementById('nomeFilamento').value;
+                const materialFilamento = document.getElementById('materialFilamento').value;
+                const precoFilamento = document.getElementById('precoFilamento').value;
                 
-                // Limpar lista atual
-                while (listaImpressoras.firstChild && listaImpressoras.firstChild !== semImpressoras) {
-                    listaImpressoras.removeChild(listaImpressoras.firstChild);
-                }
-                
-                if (db.impressoras.length === 0) {
-                    semImpressoras.classList.remove('hidden');
+                if (!nomeFilamento || !materialFilamento || !precoFilamento) {
+                    alert('Por favor, preencha todos os campos obrigatórios.');
                     return;
                 }
                 
-                semImpressoras.classList.add('hidden');
+                alert('Filamento salvo com sucesso!');
                 
-                // Adicionar impressoras à lista
-                db.impressoras.forEach(impressora => {
-                    const porcentagemUsada = (impressora.horasUtilizadas / impressora.vidaUtilHoras) * 100;
-                    const horasRestantes = impressora.vidaUtilHoras - impressora.horasUtilizadas;
-                    
-                    const impressoraCard = document.createElement('div');
-                    impressoraCard.className = 'bg-white border rounded-lg shadow-sm p-4';
-                    impressoraCard.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h3 class="text-lg font-medium text-gray-900">${impressora.nome}</h3>
-                                <p class="text-sm text-gray-600">Modelo: ${impressora.modelo}</p>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button class="text-indigo-600 hover:text-indigo-800" onclick="editarImpressora('${impressora.id}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="text-red-600 hover:text-red-800" onclick="excluirImpressora('${impressora.id}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <div class="flex justify-between text-sm mb-1">
-                                <span>Vida útil:</span>
-                                <span>${impressora.horasUtilizadas} de ${impressora.vidaUtilHoras} horas (${horasRestantes} restantes)</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                <div class="h-2.5 rounded-full ${porcentagemUsada > 75 ? 'bg-red-600' : porcentagemUsada > 50 ? 'bg-yellow-400' : 'bg-green-500'}" style="width: ${porcentagemUsada}%"></div>
-                            </div>
-                        </div>
-                        <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                                <span class="text-gray-600">Custo:</span>
-                                <span class="font-medium">${formatarMoeda(impressora.custo)}</span>
-                            </div>
-                            <div>
-                                <span class="text-gray-600">Potência:</span>
-                                <span class="font-medium">${impressora.potenciaWatts}W</span>
-                            </div>
-                            <div>
-                                <span class="text-gray-600">Amortização/hora:</span>
-                                <span class="font-medium">${formatarMoeda(impressora.custo / impressora.vidaUtilHoras)}</span>
-                            </div>
-                            <div>
-                                <span class="text-gray-600">Data cadastro:</span>
-                                <span class="font-medium">${new Date(impressora.dataCadastro).toLocaleDateString()}</span>
-                            </div>
-                        </div>
-                    `;
-                    
-                    listaImpressoras.insertBefore(impressoraCard, semImpressoras);
-                });
-            }
+                // Limpar formulário
+                document.getElementById('nomeFilamento').value = '';
+                document.getElementById('materialFilamento').value = 'PLA';
+                document.getElementById('corFilamento').value = '';
+                document.getElementById('corFilamentoPicker').value = '#000000';
+                document.getElementById('fabricanteFilamento').value = '';
+                document.getElementById('precoFilamento').value = '';
+                document.getElementById('diametroFilamento').value = '1.75';
+                document.getElementById('observacoesFilamento').value = '';
+            });
             
-            function atualizarSelectImpressoras() {
-                const selectImpressora = document.getElementById('impressoraSelecionada');
+            // Salvar Cliente
+            const salvarClienteBtn = document.getElementById('salvarClienteBtn');
+            
+            salvarClienteBtn.addEventListener('click', function() {
+                const nomeCliente = document.getElementById('nomeCliente').value;
                 
-                // Limpar opções atuais
-                while (selectImpressora.options.length > 1) {
-                    selectImpressora.remove(1);
-                }
-                
-                // Adicionar impressoras ao select
-                db.impressoras.forEach(impressora => {
-                    const option = document.createElement('option');
-                    option.value = impressora.id;
-                    option.textContent = `${impressora.nome} (${impressora.modelo})`;
-                    selectImpressora.appendChild(option);
-                });
-            }
-            
-            function calcularAmortizacao(impressora) {
-                if (impressora) {
-                    const amortizacaoHora = impressora.custo / impressora.vidaUtilHoras;
-                    document.getElementById('custoAmortizacao').value = amortizacaoHora.toFixed(2);
-                }
-            }
-            
-            function salvarProjeto() {
-                if (!resultadosCalculados) {
-                    alert('Por favor, calcule o preço antes de salvar o projeto.');
+                if (!nomeCliente) {
+                    alert('Por favor, preencha o nome do cliente.');
                     return;
                 }
                 
-                const impressoraSelecionada = document.getElementById('impressoraSelecionada').value;
-                const impressora = db.impressoras.find(imp => imp.id === impressoraSelecionada);
+                alert('Cliente salvo com sucesso!');
                 
-                const novoProjeto = {
-                    id: Date.now().toString(),
-                    ...resultadosCalculados,
-                    data: new Date().toISOString(),
-                    impressoraId: impressoraSelecionada,
-                    impressoraNome: impressora ? impressora.nome : 'Não especificada'
-                };
+                // Limpar formulário
+                document.getElementById('nomeCliente').value = '';
+                document.getElementById('emailCliente').value = '';
+                document.getElementById('telefoneCliente').value = '';
+                document.getElementById('enderecoCliente').value = '';
+                document.getElementById('tipoCliente').value = 'Pessoa Física';
+                document.getElementById('observacoesCliente').value = '';
+            });
+            
+            // Salvar Projeto
+            const salvarProjetoBtn = document.getElementById('salvarProjetoBtn');
+            
+            salvarProjetoBtn.addEventListener('click', function() {
+                const nomePeca = document.getElementById('nomePeca').value;
                 
-                db.projetos.push(novoProjeto);
-                localStorage.setItem('projetos', JSON.stringify(db.projetos));
-                
-                // Atualizar horas utilizadas da impressora
-                if (impressora) {
-                    impressora.horasUtilizadas += resultadosCalculados.tempoProd;
-                    localStorage.setItem('impressoras', JSON.stringify(db.impressoras));
-                    atualizarListaImpressoras();
+                if (!nomePeca) {
+                    alert('Por favor, preencha o nome da peça.');
+                    return;
                 }
-                
-                atualizarTabelaProjetos();
-                atualizarDashboard();
                 
                 alert('Projeto salvo com sucesso!');
-            }
+            });
             
-            function atualizarTabelaProjetos() {
-                const tabelaProjetos = document.getElementById('tabelaProjetos');
-                const semProjetos = document.getElementById('semProjetos');
-                
-                // Limpar tabela atual
-                while (tabelaProjetos.firstChild && tabelaProjetos.firstChild !== semProjetos) {
-                    tabelaProjetos.removeChild(tabelaProjetos.firstChild);
-                }
-                
-                if (db.projetos.length === 0) {
-                    semProjetos.classList.remove('hidden');
-                    return;
-                }
-                
-                semProjetos.classList.add('hidden');
-                
-                // Adicionar projetos à tabela
-                db.projetos.forEach(projeto => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap">${projeto.nomePeca}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${projeto.clientePeca || '-'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${projeto.impressoraNome}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${formatarMoeda(projeto.custoTotal)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${formatarMoeda(projeto.precoVenda)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${new Date(projeto.data).toLocaleDateString()}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <button class="text-indigo-600 hover:text-indigo-900 mr-3" onclick="carregarProjeto('${projeto.id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="text-red-600 hover:text-red-900 mr-3" onclick="excluirProjeto('${projeto.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                            <button class="text-green-600 hover:text-green-900" onclick="exportarProjetoPDF('${projeto.id}')">
-                                <i class="fas fa-file-pdf"></i>
-                            </button>
-                        </td>
-                    `;
-                    
-                    tabelaProjetos.insertBefore(tr, semProjetos);
-                });
-            }
+            // Cor do filamento
+            const corFilamentoPicker = document.getElementById('corFilamentoPicker');
+            const corFilamento = document.getElementById('corFilamento');
             
-            function atualizarDashboard() {
-                if (db.projetos.length === 0) {
-                    document.getElementById('totalProjetos').textContent = '0';
-                    document.getElementById('faturamentoTotal').textContent = 'R$ 0,00';
-                    document.getElementById('horasImpressao').textContent = '0h';
-                    document.getElementById('filamentoUtilizado').textContent = '0kg';
-                    return;
-                }
-                
-                // Calcular estatísticas
-                const totalProjetos = db.projetos.length;
-                const faturamentoTotal = db.projetos.reduce((total, projeto) => total + projeto.precoVenda, 0);
-                const horasImpressao = db.projetos.reduce((total, projeto) => total + projeto.tempoProd, 0);
-                const filamentoUtilizado = db.projetos.reduce((total, projeto) => total + projeto.pesoPeca, 0) / 1000;
-                
-                document.getElementById('totalProjetos').textContent = totalProjetos;
-                document.getElementById('faturamentoTotal').textContent = formatarMoeda(faturamentoTotal);
-                document.getElementById('horasImpressao').textContent = horasImpressao.toFixed(1) + 'h';
-                document.getElementById('filamentoUtilizado').textContent = filamentoUtilizado.toFixed(2) + 'kg';
-                
-                // Criar gráficos
-                criarGraficoProjetosPorMes();
-                criarGraficoFaturamentoPorMes();
-                criarGraficoUsoImpressoras();
-                criarGraficoDistribuicaoCustos();
-            }
-            
-            function criarGraficoProjetosPorMes() {
-                const ctx = document.getElementById('projetosPorMesChart').getContext('2d');
-                
-                // Agrupar projetos por mês
-                const projetosPorMes = {};
-                const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-                
-                db.projetos.forEach(projeto => {
-                    const data = new Date(projeto.data);
-                    const mesAno = `${meses[data.getMonth()]} ${data.getFullYear()}`;
-                    
-                    if (!projetosPorMes[mesAno]) {
-                        projetosPorMes[mesAno] = 0;
-                    }
-                    
-                    projetosPorMes[mesAno]++;
-                });
-                
-                const labels = Object.keys(projetosPorMes).sort((a, b) => {
-                    const [mesA, anoA] = a.split(' ');
-                    const [mesB, anoB] = b.split(' ');
-                    
-                    if (anoA !== anoB) {
-                        return anoA - anoB;
-                    }
-                    
-                    return meses.indexOf(mesA) - meses.indexOf(mesB);
-                });
-                
-                const data = labels.map(label => projetosPorMes[label]);
-                
-                if (projetosPorMesChart) {
-                    projetosPorMesChart.destroy();
-                }
-                
-                projetosPorMesChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Projetos',
-                            data: data,
-                            backgroundColor: '#4f46e5',
-                            borderColor: '#4338ca',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    precision: 0
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-            
-            function criarGraficoFaturamentoPorMes() {
-                const ctx = document.getElementById('faturamentoPorMesChart').getContext('2d');
-                
-                // Agrupar faturamento por mês
-                const faturamentoPorMes = {};
-                const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-                
-                db.projetos.forEach(projeto => {
-                    const data = new Date(projeto.data);
-                    const mesAno = `${meses[data.getMonth()]} ${data.getFullYear()}`;
-                    
-                    if (!faturamentoPorMes[mesAno]) {
-                        faturamentoPorMes[mesAno] = 0;
-                    }
-                    
-                    faturamentoPorMes[mesAno] += projeto.precoVenda;
-                });
-                
-                const labels = Object.keys(faturamentoPorMes).sort((a, b) => {
-                    const [mesA, anoA] = a.split(' ');
-                    const [mesB, anoB] = b.split(' ');
-                    
-                    if (anoA !== anoB) {
-                        return anoA - anoB;
-                    }
-                    
-                    return meses.indexOf(mesA) - meses.indexOf(mesB);
-                });
-                
-                const data = labels.map(label => faturamentoPorMes[label]);
-                
-                if (faturamentoPorMesChart) {
-                    faturamentoPorMesChart.destroy();
-                }
-                
-                faturamentoPorMesChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Faturamento (R$)',
-                            data: data,
-                            backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                            borderColor: '#8b5cf6',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            }
-            
-            function criarGraficoUsoImpressoras() {
-                const ctx = document.getElementById('usoImpressorasChart').getContext('2d');
-                
-                // Agrupar uso por impressora
-                const usoPorImpressora = {};
-                
-                db.projetos.forEach(projeto => {
-                    if (!projeto.impressoraNome) return;
-                    
-                    if (!usoPorImpressora[projeto.impressoraNome]) {
-                        usoPorImpressora[projeto.impressoraNome] = 0;
-                    }
-                    
-                    usoPorImpressora[projeto.impressoraNome] += projeto.tempoProd;
-                });
-                
-                const labels = Object.keys(usoPorImpressora);
-                const data = labels.map(label => usoPorImpressora[label]);
-                
-                if (usoImpressorasChart) {
-                    usoImpressorasChart.destroy();
-                }
-                
-                usoImpressorasChart = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: data,
-                            backgroundColor: [
-                                '#4f46e5',
-                                '#8b5cf6',
-                                '#ec4899',
-                                '#06b6d4',
-                                '#10b981',
-                                '#f59e0b',
-                                '#ef4444'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                            },
-                            title: {
-                                display: true,
-                                text: 'Horas de Uso por Impressora'
-                            }
-                        }
-                    }
-                });
-            }
-            
-            function criarGraficoDistribuicaoCustos() {
-                const ctx = document.getElementById('distribuicaoCustosChart').getContext('2d');
-                
-                // Calcular distribuição média de custos
-                let totalFilamento = 0;
-                let totalEnergia = 0;
-                let totalEmbalagem = 0;
-                let totalAmortizacao = 0;
-                let totalTaxas = 0;
-                
-                db.projetos.forEach(projeto => {
-                    totalFilamento += projeto.custoFilamentoTotal || 0;
-                    totalEnergia += projeto.custoEnergia || 0;
-                    totalEmbalagem += projeto.custoEmbalagem || 0;
-                    totalAmortizacao += projeto.custoAmortizacaoTotal || 0;
-                    totalTaxas += projeto.custoTaxasTotal || 0;
-                });
-                
-                if (distribuicaoCustosChart) {
-                    distribuicaoCustosChart.destroy();
-                }
-                
-                distribuicaoCustosChart = new Chart(ctx, {
-                    type: 'polarArea',
-                    data: {
-                        labels: ['Filamento', 'Energia', 'Embalagem', 'Amortização', 'Taxas'],
-                        datasets: [{
-                            data: [totalFilamento, totalEnergia, totalEmbalagem, totalAmortizacao, totalTaxas],
-                            backgroundColor: [
-                                '#4f46e5', // indigo
-                                '#8b5cf6', // violet
-                                '#ec4899', // pink
-                                '#06b6d4', // cyan
-                                '#10b981'  // emerald
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                            },
-                            title: {
-                                display: true,
-                                text: 'Distribuição de Custos'
-                            }
-                        }
-                    }
-                });
-            }
-            
-            function mostrarPreviewPDF() {
-                if (!resultadosCalculados) {
-                    alert('Por favor, calcule o preço antes de exportar o PDF.');
-                    return;
-                }
-                
-                // Preencher dados no preview do PDF
-                const data = new Date();
-                document.getElementById('pdfData').textContent = data.toLocaleDateString();
-                document.getElementById('pdfDataOrcamento').textContent = data.toLocaleDateString();
-                
-                document.getElementById('pdfNomePeca').textContent = resultadosCalculados.nomePeca;
-                document.getElementById('pdfCliente').textContent = resultadosCalculados.clientePeca || '-';
-                
-                const impressora = db.impressoras.find(imp => imp.id === resultadosCalculados.impressoraSelecionada);
-                document.getElementById('pdfImpressora').textContent = impressora ? impressora.nome : '-';
-                
-                document.getElementById('pdfTempoProd').textContent = resultadosCalculados.tempoProd;
-                document.getElementById('pdfPesoPeca').textContent = resultadosCalculados.pesoPeca;
-                
-                document.getElementById('pdfCustoFilamento').textContent = resultadosCalculados.custoFilamentoTotal.toFixed(2);
-                document.getElementById('pdfCustoEnergia').textContent = resultadosCalculados.custoEnergia.toFixed(2);
-                document.getElementById('pdfCustoEmbalagem').textContent = resultadosCalculados.custoEmbalagem.toFixed(2);
-                document.getElementById('pdfCustoAmortizacao').textContent = resultadosCalculados.custoAmortizacaoTotal.toFixed(2);
-                document.getElementById('pdfCustoDiretoTotal').textContent = resultadosCalculados.custoDireto.toFixed(2);
-                
-                document.getElementById('pdfCustoFalhas').textContent = resultadosCalculados.custoFalhas.toFixed(2);
-                document.getElementById('pdfCustoImposto').textContent = resultadosCalculados.custoImposto.toFixed(2);
-                document.getElementById('pdfCustoCartao').textContent = resultadosCalculados.custoCartao.toFixed(2);
-                document.getElementById('pdfCustoAnuncios').textContent = resultadosCalculados.custoAnunciosTotal.toFixed(2);
-                document.getElementById('pdfCustoTaxasTotal').textContent = resultadosCalculados.custoTaxasTotal.toFixed(2);
-                
-                document.getElementById('pdfCustoTotal').textContent = resultadosCalculados.custoTotal.toFixed(2);
-                document.getElementById('pdfPrecoVenda').textContent = resultadosCalculados.precoVenda.toFixed(2);
-                
-                // Mostrar modal
-                pdfModal.classList.remove('hidden');
-            }
-            
-            function downloadPDF() {
-                const { jsPDF } = window.jspdf;
-                
-                html2canvas(document.getElementById('pdfPreview')).then(canvas => {
-                    const imgData = canvas.toDataURL('image/png');
-                    const pdf = new jsPDF('p', 'mm', 'a4');
-                    const imgProps = pdf.getImageProperties(imgData);
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                    
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                    pdf.save(`orcamento_${resultadosCalculados.nomePeca.replace(/\s+/g, '_')}.pdf`);
-                });
-            }
-            
-            // Funções globais para acesso via onclick
-            window.editarImpressora = function(id) {
-                const impressora = db.impressoras.find(imp => imp.id === id);
-                if (!impressora) return;
-                
-                document.getElementById('nomeImpressora').value = impressora.nome;
-                document.getElementById('modeloImpressora').value = impressora.modelo;
-                document.getElementById('custoImpressora').value = impressora.custo;
-                document.getElementById('potenciaWatts').value = impressora.potenciaWatts;
-                document.getElementById('vidaUtilHoras').value = impressora.vidaUtilHoras;
-                document.getElementById('horasUtilizadas').value = impressora.horasUtilizadas;
-                
-                // Mudar para a tab de impressoras
-                mudarTab('impressoras');
-                
-                // Modificar o botão para atualizar
-                const salvarBtn = document.getElementById('salvarImpressoraBtn');
-                salvarBtn.textContent = 'Atualizar Impressora';
-                salvarBtn.dataset.editId = id;
-                
-                // Substituir o evento de clique
-                salvarBtn.onclick = function() {
-                    const nomeImpressora = document.getElementById('nomeImpressora').value;
-                    const modeloImpressora = document.getElementById('modeloImpressora').value;
-                    const custoImpressora = parseFloat(document.getElementById('custoImpressora').value) || 0;
-                    const potenciaWatts = parseFloat(document.getElementById('potenciaWatts').value) || 0;
-                    const vidaUtilHoras = parseFloat(document.getElementById('vidaUtilHoras').value) || 0;
-                    const horasUtilizadas = parseFloat(document.getElementById('horasUtilizadas').value) || 0;
-                    
-                    if (!nomeImpressora || !modeloImpressora || custoImpressora <= 0 || vidaUtilHoras <= 0) {
-                        alert('Por favor, preencha todos os campos obrigatórios corretamente.');
-                        return;
-                    }
-                    
-                    // Atualizar impressora
-                    const index = db.impressoras.findIndex(imp => imp.id === id);
-                    if (index !== -1) {
-                        db.impressoras[index] = {
-                            ...db.impressoras[index],
-                            nome: nomeImpressora,
-                            modelo: modeloImpressora,
-                            custo: custoImpressora,
-                            potenciaWatts: potenciaWatts,
-                            vidaUtilHoras: vidaUtilHoras,
-                            horasUtilizadas: horasUtilizadas
-                        };
-                        
-                        localStorage.setItem('impressoras', JSON.stringify(db.impressoras));
-                        
-                        // Limpar formulário
-                        document.getElementById('nomeImpressora').value = '';
-                        document.getElementById('modeloImpressora').value = '';
-                        document.getElementById('custoImpressora').value = '';
-                        document.getElementById('potenciaWatts').value = '';
-                        document.getElementById('vidaUtilHoras').value = '5000';
-                        document.getElementById('horasUtilizadas').value = '0';
-                        
-                        // Restaurar botão
-                        salvarBtn.textContent = 'Salvar Impressora';
-                        delete salvarBtn.dataset.editId;
-                        salvarBtn.onclick = salvarImpressora;
-                        
-                        // Atualizar lista de impressoras
-                        atualizarListaImpressoras();
-                        atualizarSelectImpressoras();
-                        
-                        alert('Impressora atualizada com sucesso!');
-                    }
-                };
-            };
-            
-            window.excluirImpressora = function(id) {
-                if (!confirm('Tem certeza que deseja excluir esta impressora?')) {
-                    return;
-                }
-                
-                db.impressoras = db.impressoras.filter(imp => imp.id !== id);
-                localStorage.setItem('impressoras', JSON.stringify(db.impressoras));
-                
-                atualizarListaImpressoras();
-                atualizarSelectImpressoras();
-                
-                alert('Impressora excluída com sucesso!');
-            };
-            
-            window.carregarProjeto = function(id) {
-                const projeto = db.projetos.find(p => p.id === id);
-                if (!projeto) return;
-                
-                document.getElementById('nomePeca').value = projeto.nomePeca;
-                document.getElementById('clientePeca').value = projeto.clientePeca || '';
-                document.getElementById('tempoProd').value = projeto.tempoProd;
-                document.getElementById('pesoPeca').value = projeto.pesoPeca;
-                document.getElementById('impressoraSelecionada').value = projeto.impressoraId || '';
-                
-                // Mudar para a tab de calculadora
-                mudarTab('calculadora');
-                
-                // Calcular preço
-                calcularBtn.click();
-            };
-            
-            window.excluirProjeto = function(id) {
-                if (!confirm('Tem certeza que deseja excluir este projeto?')) {
-                    return;
-                }
-                
-                db.projetos = db.projetos.filter(p => p.id !== id);
-                localStorage.setItem('projetos', JSON.stringify(db.projetos));
-                
-                atualizarTabelaProjetos();
-                atualizarDashboard();
-                
-                alert('Projeto excluído com sucesso!');
-            };
-            
-            window.exportarProjetoPDF = function(id) {
-                const projeto = db.projetos.find(p => p.id === id);
-                if (!projeto) return;
-                
-                resultadosCalculados = projeto;
-                mostrarPreviewPDF();
-            };
+            corFilamentoPicker.addEventListener('input', function() {
+                corFilamento.value = this.value;
+            });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'964bc10c038be2b7',t:'MTc1MzQ0NzUyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'964c13e282a198a5',t:'MTc1MzQ1MDkxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
